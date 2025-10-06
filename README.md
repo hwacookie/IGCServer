@@ -5,9 +5,10 @@ IGCServer is a web server that provides a REST API for storing, managing, and re
 ## Features
 
 - **REST API**: Endpoints for listing, uploading, downloading, and deleting IGC files.
-- **Web Interface**: Simple web page to view and manage stored IGC files.
+- **ZIP Upload**: Upload ZIP files containing multiple IGC files for batch processing.
+- **Web Interface**: Simple web page to view and manage stored IGC files, with forms for single and ZIP uploads.
 - **Metadata Extraction**: Automatically extracts pilot name, flight date, and starting location from IGC files.
-- **File Storage**: Stores IGC files in a dedicated directory on the server.
+- **File Storage**: Stores IGC files in a dedicated directory on the server, with duplicate overwriting.
 
 ## Installation
 
@@ -40,10 +41,11 @@ IGCServer is a web server that provides a REST API for storing, managing, and re
    - Open `http://localhost:8000` in your browser to view and manage IGC files.
 
 3. Use the REST API:
-   - `GET /igc/`: List all stored IGC files with metadata.
-   - `POST /igc/`: Upload a new IGC file (multipart/form-data).
-   - `GET /igc/{filename}`: Download a specific IGC file.
-   - `POST /igc/{filename}/delete`: Delete a specific IGC file.
+    - `GET /igc/`: List all stored IGC files with metadata.
+    - `POST /igc/`: Upload a new IGC file (multipart/form-data).
+    - `POST /igc/upload-zip`: Upload a ZIP file containing multiple IGC files (multipart/form-data).
+    - `GET /igc/{filename}`: Download a specific IGC file.
+    - `POST /igc/{filename}/delete`: Delete a specific IGC file.
 
 4. Run tests:
    ```
@@ -65,7 +67,7 @@ The application is built using FastAPI, a modern Python web framework. Key compo
 - **igc_storage/**: Directory where uploaded IGC files are stored.
 - **test_app.py**: Simple test script using the `requests` library to verify API functionality.
 
-The server uses asynchronous endpoints for better performance and supports file uploads with validation (only .igc files allowed). Metadata is extracted from IGC headers and the first GPS fix to provide basic flight information.
+The server uses asynchronous endpoints for better performance and supports file uploads with validation (only .igc and .zip files allowed). For ZIP uploads, files are extracted securely to a temporary directory, and all .igc files are moved to storage with duplicate overwriting. Metadata is extracted from IGC headers and the first GPS fix to provide basic flight information.
 
 ## Dependencies
 
@@ -73,6 +75,7 @@ The server uses asynchronous endpoints for better performance and supports file 
 - uvicorn: ASGI server
 - jinja2: Template engine
 - aerofiles: IGC file parser
+- python-multipart: Multipart form data support for FastAPI
 - requests: HTTP client for testing
 - pytest: Testing framework
 
