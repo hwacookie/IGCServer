@@ -19,8 +19,8 @@ IGCServer is a web server that provides a REST API for storing, managing, and re
 
 2. Create and activate a virtual environment:
    ```
-   python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   python3 -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. Install dependencies:
