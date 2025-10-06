@@ -4,32 +4,178 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IGCServer - IGC Files</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        h1 {
+            color: #343a40;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+        th {
+            background-color: #e9ecef;
+            cursor: pointer;
+        }
+        th:hover {
+            background-color: #dce4e9;
+        }
+        tr:hover {
+            background-color: #f1f3f5;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        button {
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 0.25rem;
+            border: 1px solid transparent;
+            color: #fff;
+        }
+        .btn-delete {
+            background-color: #dc3545;
+            border-color: #dc3545;
+        }
+        .btn-download {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        th.sort-asc::after,
+        th.sort-desc::after {
+            content: ' ';
+            position: relative;
+            left: 6px;
+            border: 5px solid transparent;
+        }
+        th.sort-asc::after {
+            border-bottom-color: #333;
+            top: -7px;
+        }
+        th.sort-desc::after {
+            border-top-color: #333;
+            top: 7px;
+        }
+        th:first-child::after {
+            content: none;
+        }
+        .action-buttons {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+    </style>
 </head>
 <body>
     <h1>IGC Files Storage</h1>
-    <ul>
-        {% for file in files %}
-        <li>
-            <strong>{{ file.filename }}</strong><br>
-            Pilot: {{ file.pilot }}<br>
-            Date: {{ file.date }}<br>
-            Location: {{ file.location }}<br>
-            <a href="/igc/{{ file.filename }}">Download</a>
-            <form action="/igc/{{ file.filename }}/delete" method="post" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </li>
-        {% endfor %}
-    </ul>
-    <h2>Upload New IGC File</h2>
-    <form action="/igc/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".igc">
-        <button type="submit">Upload</button>
+
+    <div class="action-buttons">
+        <button type="button" id="upload-button" class="btn-primary">Upload</button>
+        <form id="file-form" method="post" style="display: inline;">
+            <button type="submit" formaction="/igc/delete-selected" class="btn-delete">Delete Selected</button>
+            <button type="submit" formaction="/igc/download-selected" class="btn-download">Download Selected</button>
+        </form>
+    </div>
+
+    <form id="upload-form" action="/igc/upload" method="post" enctype="multipart/form-data" style="display: none;">
+        <input type="file" id="file-input" name="file" accept=".igc,.zip" onchange="document.getElementById('upload-form').submit()">
     </form>
-    <h2>Upload ZIP File with IGC Files</h2>
-    <form action="/igc/upload-zip" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" accept=".zip">
-        <button type="submit">Upload ZIP</button>
-    </form>
+
+    <table id="sortable-table">
+        <thead>
+            <tr>
+                <th style="width: 20px;"><input type="checkbox" id="select-all"></th>
+                <th>Filename</th>
+                <th>Pilot</th>
+                <th>Date & Time</th>
+                <th>Duration</th>
+                <th>Glider</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for file in files %}
+            <tr>
+                <td><input type="checkbox" name="selected_files" value="{{ file.filename }}" form="file-form"></td>
+                <td><a href="/igc/{{ file.filename }}">{{ file.filename }}</a></td>
+                <td>{{ file.pilot }}</td>
+                <td>{{ file.datetime }}</td>
+                <td>{{ file.duration }}</td>
+                <td>{{ file.glider_model }}</td>
+                <td>{{ file.location }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+                const comparer = (idx, asc) => (a, b) => ((v1, v2) => 
+                    v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+                    )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+                document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+                    const table = th.closest('table');
+                    const tbody = table.querySelector('tbody');
+                    const isAsc = th.classList.contains('sort-asc');
+                    const isDesc = th.classList.contains('sort-desc');
+                    let direction = 'asc';
+
+                    document.querySelectorAll('th').forEach(header => {
+                        header.classList.remove('sort-asc', 'sort-desc');
+                    });
+
+                    if (isDesc || (!isAsc && !isDesc)) {
+                        th.classList.add('sort-asc');
+                        direction = 'asc';
+                    } else {
+                        th.classList.add('sort-desc');
+                        direction = 'desc';
+                    }
+
+                    Array.from(tbody.querySelectorAll('tr'))
+                        .sort(comparer(Array.from(th.parentNode.children).indexOf(th), direction === 'asc'))
+                        .forEach(tr => tbody.appendChild(tr) );
+                })));
+            });
+        </script>
+        <script>
+            document.getElementById('upload-button').addEventListener('click', function() {
+                document.getElementById('file-input').click();
+            });
+
+            document.getElementById('select-all').addEventListener('click', function(event) {
+                var checkboxes = document.querySelectorAll('input[name="selected_files"]');
+                for (var checkbox of checkboxes) {
+                    checkbox.checked = event.target.checked;
+                }
+            });
+        </script>
 </body>
 </html>

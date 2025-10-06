@@ -7,6 +7,16 @@ servers:
   - url: http://localhost:8000
     description: Local development server
 paths:
+  /:
+    get:
+      summary: Web interface for managing IGC files
+      responses:
+        '200':
+          description: HTML page
+          content:
+            text/html:
+              schema:
+                type: string
   /igc/:
     get:
       summary: List all IGC files
@@ -19,8 +29,9 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/IGCInfo'
+  /igc/upload:
     post:
-      summary: Upload a new IGC file
+      summary: Upload a new IGC or ZIP file
       requestBody:
         required: true
         content:
@@ -31,39 +42,10 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: The IGC file to upload
+                  description: The IGC or ZIP file to upload
       responses:
-        '200':
-          description: File uploaded successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IGCInfo'
-        '400':
-          description: Invalid file type
-  /igc/upload-zip:
-    post:
-      summary: Upload a ZIP file containing IGC files
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: The ZIP file containing IGC files
-      responses:
-        '200':
-          description: ZIP uploaded and IGC files extracted successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/IGCInfo'
+        '303':
+          description: Redirect to the main page after successful upload.
         '400':
           description: Invalid file type
   /igc/{filename}:
@@ -85,7 +67,7 @@ paths:
                 format: binary
         '404':
           description: File not found
-    post:
+    delete:
       summary: Delete an IGC file
       parameters:
         - name: filename
@@ -94,27 +76,51 @@ paths:
           schema:
             type: string
       responses:
-        '200':
-          description: File deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
+        '303':
+          description: Redirect to the main page after successful deletion.
         '404':
           description: File not found
-  /:
-    get:
-      summary: Web interface for managing IGC files
+  /igc/delete-selected:
+    post:
+      summary: Delete selected IGC files
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                selected_files:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '303':
+          description: Redirect to the main page after successful deletion.
+  /igc/download-selected:
+    post:
+      summary: Download selected IGC files as a ZIP archive
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                selected_files:
+                  type: array
+                  items:
+                    type: string
       responses:
         '200':
-          description: HTML page
+          description: A ZIP file containing the selected IGC files
           content:
-            text/html:
+            application/zip:
               schema:
                 type: string
+                format: binary
+        '303':
+          description: Redirect if no files are selected.
 components:
   schemas:
     IGCInfo:
@@ -126,5 +132,13 @@ components:
           type: string
         date:
           type: string
+        start_time:
+          type: string
+        datetime:
+          type: string
+        duration:
+          type: string
         location:
+          type: string
+        glider_model:
           type: string
