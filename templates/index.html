@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGCServer - IGC Files</title>
+</head>
+<body>
+    <h1>IGC Files Storage</h1>
+    <ul>
+        {% for file in files %}
+        <li>
+            <strong>{{ file.filename }}</strong><br>
+            Pilot: {{ file.pilot }}<br>
+            Date: {{ file.date }}<br>
+            Location: {{ file.location }}<br>
+            <a href="/igc/{{ file.filename }}">Download</a>
+            <form action="/igc/{{ file.filename }}/delete" method="post" style="display:inline;">
+                <button type="submit">Delete</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    <h2>Upload New IGC File</h2>
+    <form action="/igc/" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept=".igc">
+        <button type="submit">Upload</button>
+    </form>
+</body>
+</html>

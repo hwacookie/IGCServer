@@ -1,0 +1,105 @@
+openapi: 3.0.0
+info:
+  title: IGCServer API
+  description: REST API for storing and managing IGC files
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+paths:
+  /igc/:
+    get:
+      summary: List all IGC files
+      responses:
+        '200':
+          description: A list of IGC files with metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IGCInfo'
+    post:
+      summary: Upload a new IGC file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The IGC file to upload
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IGCInfo'
+        '400':
+          description: Invalid file type
+  /igc/{filename}:
+    get:
+      summary: Download an IGC file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The IGC file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+    post:
+      summary: Delete an IGC file
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: File not found
+  /:
+    get:
+      summary: Web interface for managing IGC files
+      responses:
+        '200':
+          description: HTML page
+          content:
+            text/html:
+              schema:
+                type: string
+components:
+  schemas:
+    IGCInfo:
+      type: object
+      properties:
+        filename:
+          type: string
+        pilot:
+          type: string
+        date:
+          type: string
+        location:
+          type: string
