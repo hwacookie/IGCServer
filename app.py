@@ -4,6 +4,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import os
+import zipfile
+import tempfile
+import shutil
 from aerofiles import igc
 from typing import List
 
@@ -51,6 +54,27 @@ async def upload_igc_file(file: UploadFile = File(...)):
         f.write(await file.read())
     info = extract_igc_info(filepath)
     return info
+
+@app.post("/igc/upload-zip", response_model=List[IGCInfo])
+async def upload_zip_file(file: UploadFile = File(...)):
+    if not file.filename or not file.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="Only .zip files are allowed")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        zip_path = os.path.join(temp_dir, file.filename)
+        with open(zip_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(temp_dir)
+        added_files = []
+        for root, dirs, files in os.walk(temp_dir):
+            for filename in files:
+                if filename.endswith('.igc'):
+                    src = os.path.join(root, filename)
+                    dest = os.path.join(IGC_DIR, filename)
+                    shutil.move(src, dest)
+                    info = extract_igc_info(dest)
+                    added_files.append(info)
+        return added_files
 
 @app.get("/igc/{filename}")
 async def download_igc_file(filename: str):

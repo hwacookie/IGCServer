@@ -41,6 +41,31 @@ paths:
                 $ref: '#/components/schemas/IGCInfo'
         '400':
           description: Invalid file type
+  /igc/upload-zip:
+    post:
+      summary: Upload a ZIP file containing IGC files
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The ZIP file containing IGC files
+      responses:
+        '200':
+          description: ZIP uploaded and IGC files extracted successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IGCInfo'
+        '400':
+          description: Invalid file type
   /igc/{filename}:
     get:
       summary: Download an IGC file
